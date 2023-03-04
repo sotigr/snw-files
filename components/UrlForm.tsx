@@ -13,6 +13,10 @@ export default function UrlForm({ path, onChange }: Props) {
     const [fileName, setFileName] = useState("")
     const [url, setUrl] = useState("")
 
+    useEffect(() => {
+
+    }, [url])
+
     async function upload() {
 
         let name = fileName.replace("/", "")
@@ -32,6 +36,18 @@ export default function UrlForm({ path, onChange }: Props) {
         onChange()
     }
 
+    async function autoName(src) {
+        const resp = await axios.get("/api/fetch-page?url=" + src)
+        const html = resp.data
+
+        const element = document.createElement("div")
+        element.innerHTML = html
+
+        const title = element.querySelector("title").innerText
+
+        setFileName(title)
+    }
+
     return (
         <>
             <Typography variant="h6">
@@ -41,7 +57,7 @@ export default function UrlForm({ path, onChange }: Props) {
             <div style={{ paddingTop: "20px" }} >
                 Url
             </div>
-            <TextField value={url} onChange={v => setUrl(v.target.value)} fullWidth size="small" />
+            <TextField  onPaste={(e) => {autoName(e.clipboardData.getData('Text'))}}  value={url} onChange={v => setUrl(v.target.value)} fullWidth size="small" />
             <div style={{ paddingTop: "20px" }}>
                 File name
             </div>
@@ -53,7 +69,11 @@ export default function UrlForm({ path, onChange }: Props) {
                 <Button size="large" onClick={() => upload()}>
                     Save
                 </Button>
+                <Button size="large" onClick={() => autoName(url)}>
+                    Auto Name
+                </Button>
             </div>
+
         </>
     )
 }

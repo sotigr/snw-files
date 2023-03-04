@@ -45,6 +45,8 @@ async function main() {
       server.post("/api/folder", authPolicy, require("./api/folder"))
       server.post("/api/delete", authPolicy, require("./api/delete"))
       server.get("/api/read", authPolicy, require("./api/read"))
+      server.get("/api/list", authPolicy, require("./api/list"))
+      server.get("/api/fetch-page", authPolicy, require("./api/fetch-page"))
 
       server.post("/api/login", require("./api/login"))
 

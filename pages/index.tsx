@@ -1,11 +1,9 @@
 
-import { ChonkyIconName, FileArray, FileList, setChonkyDefaults, defineFileAction, ChonkyActions, FileNavbar, FileToolbar, FileContextMenu, FileBrowser } from 'chonky';
+import { FileArray, FileList, setChonkyDefaults, defineFileAction, ChonkyActions, FileNavbar, FileToolbar, FileContextMenu, FileBrowser } from 'chonky';
 import { ChonkyIconFA } from 'chonky-icon-fontawesome';
 import Head from 'next/head';
-import React, { useState } from 'react';
-import list from '../storage/list';
-import { NextApiRequest, NextApiResponse, NextPageContext } from 'next';
-import { Directory } from '../storage/list';
+import React, { useEffect, useState } from 'react';
+import { NextPageContext } from 'next';
 import { useRouter } from 'next/router';
 import { Box, Modal } from '@mui/material';
 import NewFolderForm from '../components/NewFolderForm';
@@ -15,8 +13,18 @@ import LoginForm from '../components/LoginForm';
 import UrlForm from '../components/UrlForm';
 import axios from 'axios';
 
+export type File = {
+  name: string,
+  fullName: string
+}
+
+export type Directory = {
+  files: File[],
+  folders: File[]
+}
+
 interface Props {
-  directory: Directory
+
   path: string
   auth: boolean
 }
@@ -34,7 +42,7 @@ const modalStyle = {
   p: 4,
 };
 
-export default function Home({ directory, path, auth }: Props) {
+export default function Home({ path, auth }: Props) {
 
   if (!auth) {
     return <LoginForm />
@@ -45,9 +53,28 @@ export default function Home({ directory, path, auth }: Props) {
   const [mDelete, setMDelete] = useState(null)
   const [upload, setUpload] = useState(false)
   const [url, setUrl] = useState(false)
+  const [directory, setDirectory] = useState<Directory>(null)
 
   setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
+
+
+  async function getDirectory() {
+    const res = await axios.get("/api/list?path=" + "root/" + (path == "/" ? "" : path))
+    setDirectory(res.data)
+  }
+
+  useEffect(() => {
+    getDirectory()
+  }, [])
+
+
+  useEffect(() => {
+    getDirectory()
+  }, [path])
+
+
+  if (!directory) return null
 
   const deleteAction = defineFileAction({
     id: 'delete',
@@ -163,7 +190,7 @@ export default function Home({ directory, path, auth }: Props) {
             downloadAction,
             deleteAction,
             ChonkyActions.EnableGridView,
-            // ChonkyActions.EnableGridView,
+            ChonkyActions.EnableListView,
           ]}
           thumbnailGenerator={(file: any) => {
 
@@ -185,7 +212,7 @@ export default function Home({ directory, path, auth }: Props) {
               if (e.payload.targetFile.isDir || e.payload.targetFile.id.includes("chain")) {
                 router.push("/?p=" + e.payload.targetFile.path)
               } else {
-                if ( e.payload.targetFile.path.endsWith(".url")) {
+                if (e.payload.targetFile.path.endsWith(".url")) {
                   let url = await axios.get("/api/read?path=" + e.payload.targetFile.path);
                   window.open(url.data, '_blank');
                 } else {
@@ -203,7 +230,7 @@ export default function Home({ directory, path, auth }: Props) {
             } else if (e.id as string == "download") {
               window.open("/api/read?path=" + e.state.selectedFilesForAction[0].fullPath + "&download=true");
             }
-  
+
           }}
         >
           <FileNavbar />
@@ -217,7 +244,7 @@ export default function Home({ directory, path, auth }: Props) {
         onClose={() => setNewFolder(false)}
       >
         <Box sx={modalStyle}>
-          <NewFolderForm path={path} onChange={() => { setNewFolder(false); router.reload() }} />
+          <NewFolderForm path={path} onChange={() => { setNewFolder(false); getDirectory() }} />
         </Box>
       </Modal>
       <Modal
@@ -225,7 +252,7 @@ export default function Home({ directory, path, auth }: Props) {
         onClose={() => setMDelete(false)}
       >
         <Box sx={modalStyle}>
-          <DeleteForm path={mDelete} onNo={() => setMDelete(false)} onChange={() => { router.reload() }} />
+          <DeleteForm path={mDelete} onNo={() => setMDelete(false)} onChange={() => { setMDelete(false); getDirectory() }} />
         </Box>
       </Modal>
       <Modal
@@ -233,7 +260,7 @@ export default function Home({ directory, path, auth }: Props) {
         onClose={() => setUpload(false)}
       >
         <Box sx={modalStyle}>
-          <UploadForm path={path} onChange={() => { router.reload() }} />
+          <UploadForm path={path} onChange={() => { setUpload(false); getDirectory() }} />
         </Box>
       </Modal>
       <Modal
@@ -241,7 +268,7 @@ export default function Home({ directory, path, auth }: Props) {
         onClose={() => setUrl(false)}
       >
         <Box sx={modalStyle}>
-          <UrlForm path={path} onChange={() => { router.reload() }} />
+          <UrlForm path={path} onChange={() => { setUrl(false); getDirectory() }} />
         </Box>
       </Modal>
     </>
@@ -264,13 +291,11 @@ export async function getServerSideProps(context: NextPageContext) {
     path = path.substring(1)
   }
 
-  let directory = await list("root/" + path)
-
   if (!path.endsWith("/")) {
     path = path + "/"
   }
 
   return {
-    props: { directory, path, auth: true }, // will be passed to the page component as props
+    props: { path, auth: true }, // will be passed to the page component as props
   }
 }

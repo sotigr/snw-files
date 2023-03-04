@@ -1,29 +1,18 @@
-import { GetFilesOptions, Storage } from "@google-cloud/storage"
-import { CreateOptions } from "@google-cloud/storage/build/src/nodejs-common/service-object"
+const { Storage } = require("@google-cloud/storage")
 
-export type File = {
-    name: string,
-    fullName: string
-}
-
-export type Directory = {
-    files: File[],
-    folders: File[]
-}
-
-export default async function list(inDirectory: string): Promise<Directory> {
+module.exports = async function list(inDirectory) {
     const storage = new Storage({ keyFilename: process.env.KEY_PATH })
     const bucket = storage.bucket(process.env.BUCKET || "")
     const directory = inDirectory.endsWith("/") ? inDirectory : inDirectory + "/"
-    const options: GetFilesOptions = {
+    const options = {
         prefix: directory,
         delimiter: "/",
         includeTrailingDelimiter: true
     }
     const [files] = await bucket.getFiles(options)
 
-    let filesOut: File[] = []
-    let foldersOut: File[] = [] 
+    let filesOut = []
+    let foldersOut  = [] 
  
     for (let file of files) {
         let name = file.name 
