@@ -6,7 +6,7 @@ const app = next({ dev: process.env.PROD != "true" })
 const handle = app.getRequestHandler()
 const bodyParser = require('body-parser');
 const read = require('./storage/read');
-const port = 3000
+const port = process.env.PORT? parseInt(process.env.PORT): 3000
 
 async function main() {
 

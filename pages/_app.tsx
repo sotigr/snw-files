@@ -1,9 +1,10 @@
 import "../styles/globals.css"
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline'; 
+import CssBaseline from '@mui/material/CssBaseline';
 
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
+import Head from "next/head";
 
 const isBrowser = typeof document !== 'undefined';
 
@@ -35,9 +36,8 @@ export default function MyApp(props) {
     const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
 
     return <CacheProvider value={emotionCache}>
-        <ThemeProvider theme={darkTheme}>
-
-            <CssBaseline />
+        <ThemeProvider theme={darkTheme}> 
+            <CssBaseline /> 
             <Component {...pageProps} />
         </ThemeProvider>
     </CacheProvider>
