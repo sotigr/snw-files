@@ -203,37 +203,7 @@ export default function Home({ directory, path, auth }: Props) {
             } else if (e.id as string == "download") {
               window.open("/api/read?path=" + e.state.selectedFilesForAction[0].fullPath + "&download=true");
             }
-
-            // else if (e.id == "delete" && e.state.selectedFilesForAction.length > 0) {
-            //   if (confirm("DELETE! Are you sure?")) {
-            //     let api = new Api()
-            //     await api.fetchJson('GET', '/api/delete-url/?id=' + e.state.selectedFilesForAction[0].id)
-            //     Router.replace(Router.asPath)
-            //   }
-            // } else if (e.id == "new_url") {
-            //   let url = prompt("Enter url", "");
-            //   if (url) {
-            //     let api = new Api()
-
-            //     await api.fetchJson('POST', '/api/new-url/', {
-            //       path: this.props.path,
-            //       url: url
-            //     })
-            //     Router.replace(Router.asPath)
-            //   }
-            // } else if (e.id == "new_folder") {
-            //   let folderName = prompt("Enter folder name", "");
-            //   if (folderName) {
-            //     if (this.props.path.endsWith("/")) {
-
-            //       Router.push("/?p=" + this.props.path + folderName)
-            //     } else {
-            //       Router.push("/?p=" + this.props.path + "/" + folderName)
-
-            //     }
-            //   }
-            // }
-
+  
           }}
         >
           <FileNavbar />
