@@ -16,7 +16,7 @@ export default function UploadForm({ path, onChange }: Props) {
 
     useEffect(()=> {
         let name = fileName.replace("/", "") 
-        setFInalName("root/" + (path == "/" ? "" : path) + name)
+        setFInalName( (path == "/" ? "" : path) + name)
     }, [file, fileName])
 
     async function onSubmit() { 
@@ -32,7 +32,7 @@ export default function UploadForm({ path, onChange }: Props) {
         
         let name = fileName.replace("/", "") 
         let data = new FormData()
-        data.append("path", "root/" + (path == "/" ? "" : path) + name)
+        data.append("path", (path == "/" ? "" : path) + name)
         data.append("file", file, name)
 
         await axios.postForm("/api/upload", data)

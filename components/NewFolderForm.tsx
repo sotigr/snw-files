@@ -14,12 +14,12 @@ export default function NewFolderForm({ path, onChange }: Props) {
     async function onSubmit() {
         if (folderName.trim() == "") return
         let name = folderName.replace("/", "") + "/"
- 
+
         await axios.post("/api/folder", {
-            path: "root/"+(path=="/"?"":path)+name
+            path:   (path == "/" ? "" : path) + name
         })
 
-         onChange()
+        onChange()
     }
 
     return (

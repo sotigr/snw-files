@@ -21,7 +21,7 @@ export default function UrlForm({ path, onChange }: Props) {
 
         let name = fileName.replace("/", "")
         let data = new FormData()
-        let fullName = "root/" + (path == "/" ? "" : path) + name
+        let fullName =  (path == "/" ? "" : path) + name
         if (!fullName.endsWith(".url")) {
             fullName += ".url"
         }

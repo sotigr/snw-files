@@ -5,13 +5,14 @@ const mime = require("mime")
 const { Readable } = require('stream');
 
 const NodeCache = require("node-cache");
+const pathPrefix = require("./helpers/path-prefix");
 const mediaCache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 
 const maxCacheSizeBytes = 30 * 1024 * 1024
 
 module.exports = async function (req, res) {
 
-    const pathName = req.query.path
+    const pathName = pathPrefix() +  req.query.path 
     const download = req.query.download
 
 

@@ -12,6 +12,7 @@ import UploadForm from '../components/UploadForm';
 import LoginForm from '../components/LoginForm';
 import UrlForm from '../components/UrlForm';
 import axios from 'axios';
+import PreviewModal from '../components/PreviewModal';
 
 export type File = {
   name: string,
@@ -43,7 +44,6 @@ const modalStyle = {
 };
 
 export default function Home({ path, auth }: Props) {
-
   if (!auth) {
     return <LoginForm />
   }
@@ -54,13 +54,14 @@ export default function Home({ path, auth }: Props) {
   const [upload, setUpload] = useState(false)
   const [url, setUrl] = useState(false)
   const [directory, setDirectory] = useState<Directory>(null)
+  const [previewText, setPreviewText] = useState(null)
 
   setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
 
 
   async function getDirectory() {
-    const res = await axios.get("/api/list?path=" + "root/" + (path == "/" ? "" : path))
+    const res = await axios.get("/api/list?path=" + (path == "/" ? "" : path))
     setDirectory(res.data)
   }
 
@@ -155,7 +156,7 @@ export default function Home({ path, auth }: Props) {
       id: i.name + "dir",
       name: i.name,
       isDir: true,
-      path: i.fullName.replace("root/", ""),
+      path: i.fullName,
       fullPath: i.fullName
     } as any
   }).concat(directory.files.map(i => {
@@ -212,11 +213,21 @@ export default function Home({ path, auth }: Props) {
               if (e.payload.targetFile.isDir || e.payload.targetFile.id.includes("chain")) {
                 router.push("/?p=" + e.payload.targetFile.path)
               } else {
-                if (e.payload.targetFile.path.endsWith(".url")) {
-                  let url = await axios.get("/api/read?path=" + e.payload.targetFile.path);
+                const file = e.payload.targetFile.path
+                const previewExts = [".txt", ".json"]
+                for (let ext of previewExts) {
+                  if (file.endsWith(ext)) {
+                    let text = await axios.get("/api/read?path=" + file, { responseType: "text" });
+                    setPreviewText(text.data)
+                    return
+                  }
+                }
+
+                if (file.endsWith(".url")) {
+                  let url = await axios.get("/api/read?path=" + file);
                   window.open(url.data, '_blank');
                 } else {
-                  window.open("/api/read?path=" + e.payload.targetFile.path, '_blank');
+                  window.open("/api/read?path=" + file, '_blank');
                 }
               }
             } else if (e.id as string == "new_folder") {
@@ -271,6 +282,7 @@ export default function Home({ path, auth }: Props) {
           <UrlForm path={path} onChange={() => { setUrl(false); getDirectory() }} />
         </Box>
       </Modal>
+      <PreviewModal open={previewText ? true : false} text={previewText} onClose={() => setPreviewText(null)} />
     </>
   );
 }
@@ -291,7 +303,7 @@ export async function getServerSideProps(context: NextPageContext) {
     path = path.substring(1)
   }
 
-  if (!path.endsWith("/")) {
+  if (!path.endsWith("/") && path != "") {
     path = path + "/"
   }
 
