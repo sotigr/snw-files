@@ -11,29 +11,51 @@ interface Props {
 export default function UploadForm({ path, onChange }: Props) {
 
     const [fileName, setFileName] = useState("")
-    const [file, setFile] = useState(null)
-    const [finalName, setFInalName] = useState("")
+    const [files, setFiles] = useState<FileList>(null)
+    const [finalName, setFinalName] = useState("")
+    const [status, setStatus] = useState("")
 
-    useEffect(()=> {
-        let name = fileName.replace("/", "") 
-        setFInalName( (path == "/" ? "" : path) + name)
-    }, [file, fileName])
+    useEffect(() => {
+        let name = fileName.replace("/", "")
+        setFinalName((path == "/" ? "" : path) + name)
+    }, [files, fileName])
 
-    async function onSubmit() { 
-        let files = await openFile()
+    async function onSubmit() {
+        let files = await openFile(null, true)
 
-        if (!files[0]) return;
+        if (files.length == 0) return;
 
-        setFile(files[0])
-        setFileName(files[0].name)
+        if (files.length == 1) {
+            setFiles(files)
+            setFileName(files[0].name)
+        } else {
+
+            for (let cfile of files as any) {
+                const file: File = cfile 
+                const name = file.name
+
+                setStatus("Uploading: " + name)
+
+                let data = new FormData()
+                data.append("path", (path == "/" ? "" : path) + name)
+                data.append("file", files[0], name)
+        
+                await axios.postForm("/api/upload", data)
+
+            }
+
+            setStatus(null)
+            onChange()
+        }
+
     }
 
     async function upload() {
-        
-        let name = fileName.replace("/", "") 
+
+        let name = fileName.replace("/", "")
         let data = new FormData()
         data.append("path", (path == "/" ? "" : path) + name)
-        data.append("file", file, name)
+        data.append("file", files[0], name)
 
         await axios.postForm("/api/upload", data)
 
@@ -54,7 +76,14 @@ export default function UploadForm({ path, onChange }: Props) {
                 </Button>
             </div>
             {
-                file && (
+                status && (
+                    <div>
+                        {status}
+                    </div>
+                )
+            } 
+            {
+                files && files.length == 1 && (
                     <>
                         <TextField value={fileName} onChange={v => setFileName(v.target.value)} style={{ paddingTop: "20px" }} fullWidth size="small" />
                         <Typography>
