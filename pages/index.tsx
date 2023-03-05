@@ -13,6 +13,7 @@ import LoginForm from '../components/LoginForm';
 import UrlForm from '../components/UrlForm';
 import axios from 'axios';
 import PreviewModal from '../components/PreviewModal';
+import MediaModal from '../components/MediaModal';
 
 export type File = {
   name: string,
@@ -43,6 +44,23 @@ const modalStyle = {
   p: 4,
 };
 
+let imagePreviewExtensions = [
+  ".png", ".jpg", ".jpeg", ".webp",
+  ".gif", ".ico"
+]
+imagePreviewExtensions = imagePreviewExtensions.concat(imagePreviewExtensions.map(e => e.toUpperCase()))
+
+let videoPreviewExtensions = [
+  ".mp4"
+]
+videoPreviewExtensions = videoPreviewExtensions.concat(videoPreviewExtensions.map(e => e.toUpperCase()))
+
+let textPreviewExtensions = [
+  ".txt", ".json"
+]
+textPreviewExtensions = textPreviewExtensions.concat(textPreviewExtensions.map(e => e.toUpperCase()))
+
+
 export default function Home({ path, auth }: Props) {
   if (!auth) {
     return <LoginForm />
@@ -55,6 +73,9 @@ export default function Home({ path, auth }: Props) {
   const [url, setUrl] = useState(false)
   const [directory, setDirectory] = useState<Directory>(null)
   const [previewText, setPreviewText] = useState(null)
+  const [previewMedia, setPreviewMedia] = useState(null)
+  const [previewMediaType, setPreviewMediaType] = useState("")
+
 
   setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
@@ -143,6 +164,26 @@ export default function Home({ path, auth }: Props) {
   ]
 
 
+  function getFileMediaType(fileName: string) {
+    for (let ext of imagePreviewExtensions) {
+      if (fileName.endsWith(ext)) {
+        return "image"
+      }
+    }
+    for (let ext of videoPreviewExtensions) {
+      if (fileName.endsWith(ext)) {
+        return "video"
+      }
+    }
+
+    for (let ext of textPreviewExtensions) {
+      if (fileName.endsWith(ext)) {
+        return "text"
+      }
+    }
+    return "other"
+  }
+
   path.split("/").map((p, i) => {
     return {
       id: i,
@@ -150,6 +191,8 @@ export default function Home({ path, auth }: Props) {
       openable: true
     }
   })
+
+  let filesToPreview = []
 
   let files: FileArray = directory.folders.map(i => {
     return {
@@ -160,13 +203,14 @@ export default function Home({ path, auth }: Props) {
       fullPath: i.fullName
     } as any
   }).concat(directory.files.map(i => {
+    let type = getFileMediaType(i.name)
+    if (type == "image") { filesToPreview.push(i.fullName) }
     return {
-      id: i.name + "dir",
+      id: i.name + "file",
       name: i.name,
       isDir: false,
       path: i.fullName,
-      fullPath: i.fullName,
-
+      fullPath: i.fullName, 
     } as any
   }))
 
@@ -177,7 +221,6 @@ export default function Home({ path, auth }: Props) {
       </Head>
       <div style={{ height: "100vh", width: "100%" }}>
         <FileBrowser
-
           darkMode
           disableDefaultFileActions={true}
           defaultFileViewActionId={ChonkyActions.EnableGridView.id}
@@ -194,18 +237,12 @@ export default function Home({ path, auth }: Props) {
             ChonkyActions.EnableListView,
           ]}
           thumbnailGenerator={(file: any) => {
-
-            const previewExtensions = [
-              ".png", ".jpg", ".jpeg", ".webp",
-              ".gif", ".ico"
-            ]
-            for (let ext of previewExtensions) {
-              if (file.fullPath.endsWith(ext)) {
-                return "/api/read?path=" + file.fullPath
-              }
+            if (getFileMediaType(file.fullPath) == "image") {
+              // return null
+              return "/api/read?path=" + file.fullPath
+            } else {
+              return null
             }
-
-            return null
           }
           }
           onFileAction={async (e) => {
@@ -214,13 +251,17 @@ export default function Home({ path, auth }: Props) {
                 router.push("/?p=" + e.payload.targetFile.path)
               } else {
                 const file = e.payload.targetFile.path
-                const previewExts = [".txt", ".json"]
-                for (let ext of previewExts) {
-                  if (file.endsWith(ext)) {
-                    let text = await axios.get("/api/read?path=" + file, { responseType: "text" });
-                    setPreviewText(text.data)
-                    return
-                  }
+                let type = getFileMediaType(file)
+                if (type == "image") {
+                  setPreviewMediaType("image")
+                  setPreviewMedia("/api/read?path=" + file)
+                  return
+                }
+              
+                if (type == "text") {
+                  let text = await axios.get("/api/read?path=" + file, { responseType: "text" });
+                  setPreviewText(text.data)
+                  return
                 }
 
                 if (file.endsWith(".url")) {
@@ -283,6 +324,44 @@ export default function Home({ path, auth }: Props) {
         </Box>
       </Modal>
       <PreviewModal open={previewText ? true : false} text={previewText} onClose={() => setPreviewText(null)} />
+      <MediaModal open={previewMedia ? true : false}
+        mediaPath={previewMedia}
+        mediaType={previewMediaType}
+        onClose={() => setPreviewMedia(null)}
+        onPrevious={() => { 
+          let nextFileIndex = 0
+          for (let f of filesToPreview) {
+            if (previewMedia.endsWith(f)) {
+              break;
+            }
+            nextFileIndex += 1
+          }
+          nextFileIndex -= 1
+          if (nextFileIndex < 0) {
+            nextFileIndex = filesToPreview.length - 1
+          }
+ 
+          setPreviewMedia("/api/read?path=" + filesToPreview[nextFileIndex])
+        }}
+        onNext={() => { 
+          let nextFileIndex = 0
+          for (let f of filesToPreview) {
+            if (previewMedia.endsWith(f)) {
+              break;
+            }
+            nextFileIndex += 1
+          }
+          nextFileIndex += 1
+          if (nextFileIndex > filesToPreview.length-1) {
+            nextFileIndex = 0
+          }
+ 
+          setPreviewMedia("/api/read?path=" + filesToPreview[nextFileIndex])
+        }}
+        
+      />
+
+
     </>
   );
 }
