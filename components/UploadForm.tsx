@@ -38,7 +38,7 @@ export default function UploadForm({ path, onChange }: Props) {
 
                 let data = new FormData()
                 data.append("path", (path == "/" ? "" : path) + name)
-                data.append("file", files[0], name)
+                data.append("file", cfile, name)
         
                 await axios.postForm("/api/upload", data)
 
