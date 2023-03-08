@@ -1,4 +1,4 @@
-import { Button, TextField, Typography } from "@mui/material";
+import { Button, LinearProgress, TextField, Typography } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import openFile from "../storage/open-file";
@@ -13,7 +13,7 @@ export default function UploadForm({ path, onChange }: Props) {
     const [fileName, setFileName] = useState("")
     const [files, setFiles] = useState<FileList>(null)
     const [finalName, setFinalName] = useState("")
-    const [status, setStatus] = useState("")
+    const [status, setStatus] = useState(null)
 
     useEffect(() => {
         let name = fileName.replace("/", "")
@@ -29,18 +29,25 @@ export default function UploadForm({ path, onChange }: Props) {
             setFiles(files)
             setFileName(files[0].name)
         } else {
-
+            let len = files.length
+            let cn = 0
             for (let cfile of files as any) {
-                const file: File = cfile 
+                const file: File = cfile
                 const name = file.name
-
-                setStatus("Uploading: " + name)
+                cn += 1
 
                 let data = new FormData()
                 data.append("path", (path == "/" ? "" : path) + name)
                 data.append("file", cfile, name)
-        
-                await axios.postForm("/api/upload", data)
+
+                const onUploadProgress = (event) => {
+                    const percentage = Math.round((100 * event.loaded) / event.total);
+                    setStatus(<div><span> Uploading: {name} {cn}/{len}</span> <LinearProgress variant="determinate" value={percentage} /> </div>)
+                };
+
+                await axios.postForm("/api/upload", data, {
+                    onUploadProgress
+                })
 
             }
 
@@ -56,9 +63,17 @@ export default function UploadForm({ path, onChange }: Props) {
         let data = new FormData()
         data.append("path", (path == "/" ? "" : path) + name)
         data.append("file", files[0], name)
+        const onUploadProgress = (event) => {
+            const percentage = Math.round((100 * event.loaded) / event.total);
 
-        await axios.postForm("/api/upload", data)
+            setStatus(<div> <LinearProgress variant="determinate" value={percentage} /> </div>)
+        };
 
+        await axios.postForm("/api/upload", data, {
+            onUploadProgress
+        })
+
+        setStatus(null)
         onChange()
     }
 
@@ -68,22 +83,20 @@ export default function UploadForm({ path, onChange }: Props) {
                 Upload
             </Typography>
 
-            <div style={{
-                paddingTop: "20px",
-            }}>
-                <Button size="large" onClick={() => onSubmit()}>
-                    Select File
-                </Button>
-            </div>
             {
-                status && (
-                    <div>
-                        {status}
+                !status && (
+                    <div style={{
+                        paddingTop: "20px",
+                    }}>
+                        <Button size="large" onClick={() => onSubmit()}>
+                            Select File
+                        </Button>
                     </div>
                 )
-            } 
+            }
+
             {
-                files && files.length == 1 && (
+                files && files.length == 1 && !status && (
                     <>
                         <TextField value={fileName} onChange={v => setFileName(v.target.value)} style={{ paddingTop: "20px" }} fullWidth size="small" />
                         <Typography>
@@ -97,6 +110,13 @@ export default function UploadForm({ path, onChange }: Props) {
                             </Button>
                         </div>
                     </>
+                )
+            }
+            {
+                status && (
+                    <div>
+                        {status}
+                    </div>
                 )
             }
 
