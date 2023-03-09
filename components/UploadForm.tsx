@@ -2,6 +2,7 @@ import { Button, LinearProgress, TextField, Typography } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import openFile from "../storage/open-file";
+import { ContentPaste } from "@mui/icons-material";
 
 interface Props {
     path: string
@@ -11,14 +12,69 @@ interface Props {
 export default function UploadForm({ path, onChange }: Props) {
 
     const [fileName, setFileName] = useState("")
-    const [files, setFiles] = useState<FileList>(null)
+    const [files, setFiles] = useState<FileList | File[]>(null)
     const [finalName, setFinalName] = useState("")
     const [status, setStatus] = useState(null)
+    function getFileFromPasteEvent(event) {
+        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file') {
+                return item.getAsFile();
+            }
+        }
+    }
+    // useEffect(() => {
+ 
+    //     document.onpaste = function (event) {
+    //         const file = getFileFromPasteEvent(event);
+    //         if (!file) { return; }
 
+    //         setFiles([file])
+    //         setFileName(file.name)
+    //     }
+    //     return () => {
+    //         document.onpaste = () => { }
+    //     }
+    // }, [])
+    function onClipboard (event) {
+        const file = getFileFromPasteEvent(event);
+        if (!file) { return; }
+
+        setFiles([file])
+        setFileName(file.name)
+    }
+ 
     useEffect(() => {
         let name = fileName.replace("/", "")
         setFinalName((path == "/" ? "" : path) + name)
     }, [files, fileName])
+
+    async function uploadFiles(files: FileList) {
+        let len = files.length
+        let cn = 0
+        for (let cfile of files as any) {
+            const file: File = cfile
+            const name = file.name
+            cn += 1
+
+            let data = new FormData()
+            data.append("path", (path == "/" ? "" : path) + name)
+            data.append("file", cfile, name)
+
+            const onUploadProgress = (event) => {
+                const percentage = Math.round((100 * event.loaded) / event.total);
+                setStatus(<div><span> Uploading: {name} {cn}/{len}</span> <LinearProgress variant="determinate" value={percentage} /> </div>)
+            };
+
+            await axios.postForm("/api/upload", data, {
+                onUploadProgress
+            })
+
+        }
+
+        setStatus(null)
+    }
 
     async function onSubmit() {
         let files = await openFile(null, true)
@@ -29,29 +85,7 @@ export default function UploadForm({ path, onChange }: Props) {
             setFiles(files)
             setFileName(files[0].name)
         } else {
-            let len = files.length
-            let cn = 0
-            for (let cfile of files as any) {
-                const file: File = cfile
-                const name = file.name
-                cn += 1
-
-                let data = new FormData()
-                data.append("path", (path == "/" ? "" : path) + name)
-                data.append("file", cfile, name)
-
-                const onUploadProgress = (event) => {
-                    const percentage = Math.round((100 * event.loaded) / event.total);
-                    setStatus(<div><span> Uploading: {name} {cn}/{len}</span> <LinearProgress variant="determinate" value={percentage} /> </div>)
-                };
-
-                await axios.postForm("/api/upload", data, {
-                    onUploadProgress
-                })
-
-            }
-
-            setStatus(null)
+            uploadFiles(files)
             onChange()
         }
 
@@ -90,6 +124,9 @@ export default function UploadForm({ path, onChange }: Props) {
                     }}>
                         <Button size="large" onClick={() => onSubmit()}>
                             Select File
+                        </Button>
+                        <Button contentEditable size="large" onPaste={onClipboard}>
+                            <ContentPaste />
                         </Button>
                     </div>
                 )
