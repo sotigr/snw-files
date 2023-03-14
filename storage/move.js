@@ -1,11 +1,11 @@
-import { MoveOptions, Storage } from "@google-cloud/storage";
+const { Storage } = require("@google-cloud/storage")
 
-export default async function move(from: string, to: string) {
+module.exports = async function move(from, to) {
     const storage = new Storage({ keyFilename: process.env.KEY_PATH })
     
     const moveDestination = storage.bucket(process.env.BUCKET || "").file(to);
 
-    const moveOptions: MoveOptions = {
+    const moveOptions = {
         preconditionOpts: {
             ifGenerationMatch: 0,
         },

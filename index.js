@@ -6,7 +6,7 @@ const app = next({ dev: process.env.PROD != "true" })
 const handle = app.getRequestHandler()
 const bodyParser = require('body-parser');
 const read = require('./storage/read');
-const port = process.env.PORT? parseInt(process.env.PORT): 3000
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
 async function main() {
 
@@ -44,6 +44,7 @@ async function main() {
       server.post("/api/upload", authPolicy, ...require("./api/upload"))
       server.post("/api/folder", authPolicy, require("./api/folder"))
       server.post("/api/delete", authPolicy, require("./api/delete"))
+      server.post("/api/move", authPolicy, require("./api/move"))
       server.get("/api/read", authPolicy, require("./api/read"))
       server.get("/api/list", authPolicy, require("./api/list"))
       server.get("/api/fetch-page", authPolicy, require("./api/fetch-page"))
@@ -53,7 +54,7 @@ async function main() {
       server.get('*', (req, res) => {
         return handle(req, res)
       })
-  
+
       server.listen(port, (err) => {
         if (err) throw err
         console.log('> Ready on http://localhost:' + port)

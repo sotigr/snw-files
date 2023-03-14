@@ -79,8 +79,6 @@ export default function Home({ path, auth }: Props) {
 
   setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
-
-
   async function getDirectory() {
     const res = await axios.get("/api/list?path=" + (path == "/" ? "" : path))
     setDirectory(res.data)
@@ -98,22 +96,14 @@ export default function Home({ path, auth }: Props) {
 
   if (!directory) return null
 
-  const deleteAction = defineFileAction({
-    id: 'delete',
-    button: {
-      name: 'Delete',
-      toolbar: false,
-      contextMenu: true,
-      group: 'Options',
-    },
-  })
+
   const folderAction = defineFileAction({
     id: 'new_folder',
     button: {
       name: 'New Folder',
       toolbar: true,
       contextMenu: true,
-      group: 'Options',
+      group: 'New',
     },
   })
   const urlAction = defineFileAction({
@@ -122,7 +112,7 @@ export default function Home({ path, auth }: Props) {
       name: 'New Url',
       toolbar: true,
       contextMenu: true,
-      group: 'Options',
+      group: 'New',
     },
   })
   const uploadAction = defineFileAction({
@@ -130,6 +120,15 @@ export default function Home({ path, auth }: Props) {
     button: {
       name: 'Upload',
       toolbar: true,
+      contextMenu: true,
+      group: 'New',
+    },
+  })
+  const deleteAction = defineFileAction({
+    id: 'delete',
+    button: {
+      name: 'Delete',
+      toolbar: false,
       contextMenu: true,
       group: 'Options',
     },
@@ -143,14 +142,26 @@ export default function Home({ path, auth }: Props) {
       group: 'Options',
     },
   })
+  const renameAction = defineFileAction({
+    id: 'rename',
+    button: {
+      name: 'Rename',
+      toolbar: false,
+      contextMenu: true,
+      group: 'Options',
+    },
+  })
 
 
-  const folderChain = [
+  const folderChain: FileArray = [
     {
       id: "0chain",
       name: "Home",
       openable: true,
-      path: ""
+      path: "",
+      fullPath: "",
+      droppable: true
+
     },
     ...path.split("/").filter(p => p.trim() != "").map((p, i) => {
 
@@ -158,7 +169,10 @@ export default function Home({ path, auth }: Props) {
         id: `${i + 1}chain`,
         name: p,
         path: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
-        openable: true
+        fullPath: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
+        openable: true,
+        droppable: true
+
       }
     })
   ]
@@ -210,7 +224,7 @@ export default function Home({ path, auth }: Props) {
       name: i.name,
       isDir: false,
       path: i.fullName,
-      fullPath: i.fullName, 
+      fullPath: i.fullName,
     } as any
   }))
 
@@ -232,6 +246,7 @@ export default function Home({ path, auth }: Props) {
             urlAction,
             uploadAction,
             downloadAction,
+            renameAction,
             deleteAction,
             ChonkyActions.EnableGridView,
             ChonkyActions.EnableListView,
@@ -246,6 +261,7 @@ export default function Home({ path, auth }: Props) {
           }
           }
           onFileAction={async (e) => {
+
             if (e.id == "open_files") {
               if (e.payload.targetFile.isDir || e.payload.targetFile.id.includes("chain")) {
                 router.push("/?p=" + e.payload.targetFile.path)
@@ -257,7 +273,7 @@ export default function Home({ path, auth }: Props) {
                   setPreviewMedia("/api/read?path=" + file)
                   return
                 }
-              
+
                 if (type == "text") {
                   let text = await axios.get("/api/read?path=" + file, { responseType: "text" });
                   setPreviewText(text.data)
@@ -281,6 +297,24 @@ export default function Home({ path, auth }: Props) {
               setUrl(true)
             } else if (e.id as string == "download") {
               window.open("/api/read?path=" + e.state.selectedFilesForAction[0].fullPath + "&download=true");
+            } else if (e.id == "move_files") {
+              const from = e.payload.draggedFile.fullPath
+              const to = e.payload.destination.fullPath + e.payload.draggedFile.name
+              await axios.post("/api/move", {
+                from, to
+              });
+              getDirectory()
+            } else if (e.id as string == "rename") {
+              const fileName = e.state.selectedFilesForAction[0].name
+              const newName = prompt("Rename", fileName);
+              if (!newName) return
+              const from = e.state.selectedFilesForAction[0].fullPath
+              const to = from.substring(0, from.length - fileName.length) + newName
+           
+              await axios.post("/api/move", {
+                from, to
+              });
+              getDirectory()
             }
 
           }}
@@ -328,7 +362,7 @@ export default function Home({ path, auth }: Props) {
         mediaPath={previewMedia}
         mediaType={previewMediaType}
         onClose={() => setPreviewMedia(null)}
-        onPrevious={() => { 
+        onPrevious={() => {
           let nextFileIndex = 0
           for (let f of filesToPreview) {
             if (previewMedia.endsWith(f)) {
@@ -340,10 +374,10 @@ export default function Home({ path, auth }: Props) {
           if (nextFileIndex < 0) {
             nextFileIndex = filesToPreview.length - 1
           }
- 
+
           setPreviewMedia("/api/read?path=" + filesToPreview[nextFileIndex])
         }}
-        onNext={() => { 
+        onNext={() => {
           let nextFileIndex = 0
           for (let f of filesToPreview) {
             if (previewMedia.endsWith(f)) {
@@ -352,13 +386,13 @@ export default function Home({ path, auth }: Props) {
             nextFileIndex += 1
           }
           nextFileIndex += 1
-          if (nextFileIndex > filesToPreview.length-1) {
+          if (nextFileIndex > filesToPreview.length - 1) {
             nextFileIndex = 0
           }
- 
+
           setPreviewMedia("/api/read?path=" + filesToPreview[nextFileIndex])
         }}
-        
+
       />
 
 
