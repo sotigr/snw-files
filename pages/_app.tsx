@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import Head from "next/head";
+import ResponsiveContext, { getResponsive } from "../context/responsive";
 
 const isBrowser = typeof document !== 'undefined';
 
@@ -34,11 +35,14 @@ const darkTheme = createTheme({
 export default function MyApp(props) {
 
     const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
+    const responsive = getResponsive()
 
     return <CacheProvider value={emotionCache}>
-        <ThemeProvider theme={darkTheme}> 
-            <CssBaseline /> 
-            <Component {...pageProps} />
-        </ThemeProvider>
+        <ResponsiveContext.Provider value={responsive}>
+            <ThemeProvider theme={darkTheme}> 
+                <CssBaseline /> 
+                <Component {...pageProps} />
+            </ThemeProvider>
+        </ResponsiveContext.Provider>
     </CacheProvider>
 }
