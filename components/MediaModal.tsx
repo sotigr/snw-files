@@ -19,6 +19,27 @@ interface Props {
 
 
 export default function MediaModal({ open, onClose, mediaPath, mediaType, onNext, onPrevious }: Props) {
+
+    function renderImage() {
+        return <img
+            style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain"
+            }}
+            src={mediaPath} />
+    }
+    function renderVideo() {
+        return <video
+            style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain"
+            }}
+            controls
+            src={mediaPath} />
+    }
+
     return (
         <Modal open={open} onClose={() => onClose()}>
             <div style={{
@@ -33,31 +54,31 @@ export default function MediaModal({ open, onClose, mediaPath, mediaType, onNext
                     style={{ position: "absolute", top: "5px", right: "5px", zIndex: 2 }}>
                     <Close />
                 </IconButton>
-               
+
+                {mediaType == "image" && renderImage()}
+                {mediaType == "video" && renderVideo()}
                 {
-                    mediaType == "image" &&
-                    <img
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain"
-                        }}
-                        src={mediaPath} />
+                    mediaType == "image" && (
+                        <>
+                            <div onClick={() => onPrevious()} style={{
+                                position: "absolute",
+                                top: "0",
+                                left: "0",
+                                bottom: "0",
+                                width: "20%",
+                                cursor: "pointer"
+                            }} />
+                            <div onClick={() => onNext()} style={{
+                                position: "absolute",
+                                top: "0",
+                                right: "0",
+                                bottom: "0",
+                                width: "20%",
+                                cursor: "pointer"
+                            }} />
+                        </>
+                    )
                 }
-                <div onClick={() => onPrevious()} style={{
-                    position: "absolute",
-                    top: "0",
-                    left: "0",
-                    bottom: "0",
-                    width: "20%",
-                }} />
-                <div onClick={() => onNext()} style={{
-                    position: "absolute",
-                    top: "0",
-                    right: "0",
-                    bottom: "0",
-                    width: "20%",
-                }} />
             </div>
         </Modal>
     )

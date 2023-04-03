@@ -1,12 +1,9 @@
 
 import { FileArray, FileList, setChonkyDefaults, defineFileAction, ChonkyActions, FileNavbar, FileToolbar, FileContextMenu, FileBrowser } from 'chonky';
 import { ChonkyIconFA } from 'chonky-icon-fontawesome';
-import Head from 'next/head';
-import React, { useContext, useEffect, useState } from 'react';
-import { NextPageContext } from 'next';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Box, Button, Modal } from '@mui/material'; 
-import LoginForm from '../LoginForm';
+import { Box, Button, Modal } from '@mui/material';
 import axios from 'axios';
 import NewFolderForm from '../NewFolderForm';
 import DeleteForm from '../DeleteForm';
@@ -15,17 +12,20 @@ import PreviewModal from '../PreviewModal';
 import MediaModal from '../MediaModal';
 import UrlForm from '../UrlForm';
 import { WindowContext } from '../Window';
-
+import Image from "next/image"
 export type File = {
   name: string,
-  fullName: string
+  fullName: string,
+  size?:string,
+  contentType?: string,
+  modified?: string
 }
 
 export type Directory = {
   files: File[],
   folders: File[]
 }
-  
+
 const modalStyle = {
   position: 'absolute' as 'absolute',
   top: '50%',
@@ -56,7 +56,7 @@ let textPreviewExtensions = [
 textPreviewExtensions = textPreviewExtensions.concat(textPreviewExtensions.map(e => e.toUpperCase()))
 
 
-export default function FileExplorer() { 
+export default function FileExplorer() {
 
   const router = useRouter()
   const [newFolder, setNewFolder] = useState(false)
@@ -68,6 +68,38 @@ export default function FileExplorer() {
   const [previewMedia, setPreviewMedia] = useState(null)
   const [previewMediaType, setPreviewMediaType] = useState("")
 
+
+  let files: FileArray = useMemo(() => {
+    if (!directory) return []
+    return directory.folders.map(i => {
+      return {
+        id: i.name + "dir",
+        name: i.name,
+        isDir: true,
+        path: i.fullName,
+        fullPath: i.fullName
+      } as any
+    }).concat(directory.files.map(i => {
+      // let type = getFileMediaType(i.name)
+      // if (type == "image") { filesToPreview.push(i.fullName) }
+      const size = parseInt(i.size)
+      const sizeMb = size * Math.pow(10, -6)
+      console.log(i.name, sizeMb)
+      return {
+        id: i.name + "file",
+        name: i.name,
+        isDir: false,
+        path: i.fullName,
+        fullPath: i.fullName, 
+        sizeMb: sizeMb,
+        size: size
+      } as any
+    }))
+  }, [directory]);
+ 
+  let filesToPreview = useMemo(()=> {
+    return files.filter(f=>f.isDir == false && getFileMediaType(f.name) == "image").map(f=>f.fullPath)
+  }, [files])
 
   let path: string = ""
   if (router.query.p) {
@@ -81,6 +113,33 @@ export default function FileExplorer() {
   if (!path.endsWith("/") && path != "") {
     path = path + "/"
   }
+
+  const folderChain: FileArray = useMemo(() => {
+    return [
+      {
+        id: "0chain",
+        name: "Home",
+        openable: true,
+        path: "",
+        fullPath: "",
+        droppable: true
+
+      },
+      ...path.split("/").filter(p => p.trim() != "").map((p, i) => {
+
+        return {
+          id: `${i + 1}chain`,
+          name: p,
+          path: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
+          fullPath: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
+          openable: true,
+          droppable: true
+
+        }
+      })
+    ] 
+  }, [directory])
+
 
 
 
@@ -160,29 +219,6 @@ export default function FileExplorer() {
   })
 
 
-  const folderChain: FileArray = [
-    {
-      id: "0chain",
-      name: "Home",
-      openable: true,
-      path: "",
-      fullPath: "",
-      droppable: true
-
-    },
-    ...path.split("/").filter(p => p.trim() != "").map((p, i) => {
-
-      return {
-        id: `${i + 1}chain`,
-        name: p,
-        path: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
-        fullPath: path.substring(0, path.lastIndexOf(p) + p.length) + "/",
-        openable: true,
-        droppable: true
-
-      }
-    })
-  ]
 
 
   function getFileMediaType(fileName: string) {
@@ -213,36 +249,15 @@ export default function FileExplorer() {
     }
   })
 
-  let filesToPreview = []
 
-  let files: FileArray = directory.folders.map(i => {
-    return {
-      id: i.name + "dir",
-      name: i.name,
-      isDir: true,
-      path: i.fullName,
-      fullPath: i.fullName
-    } as any
-  }).concat(directory.files.map(i => {
-    let type = getFileMediaType(i.name)
-    if (type == "image") { filesToPreview.push(i.fullName) }
-    return {
-      id: i.name + "file",
-      name: i.name,
-      isDir: false,
-      path: i.fullName,
-      fullPath: i.fullName,
-    } as any
-  }))
-
-  const windowCtx = useContext(WindowContext)
-
+  // const windowCtx = useContext(WindowContext)
+  console.log(previewMedia)
   return (
     <>
       <div style={{ height: "100vh", width: "100%" }}>
-        <Button onClick={windowCtx.close}>
-            close
-        </Button>
+        {/* <Button onClick={windowCtx.close}>
+          close
+        </Button> */}
         <FileBrowser
           darkMode
           disableDefaultFileActions={true}
@@ -260,10 +275,10 @@ export default function FileExplorer() {
             ChonkyActions.EnableGridView,
             ChonkyActions.EnableListView,
           ]}
-          thumbnailGenerator={(file: any) => {
-            if (getFileMediaType(file.fullPath) == "image") {
+          thumbnailGenerator={(file: any) => {  
+            if (getFileMediaType(file.fullPath) == "image" && file.sizeMb <= 8) {
               // return null
-              return "/api/read?path=" + file.fullPath
+              return "/api/read?path=" + file.fullPath + "&thumb=true"
             } else {
               return null
             }
@@ -279,6 +294,11 @@ export default function FileExplorer() {
                 let type = getFileMediaType(file)
                 if (type == "image") {
                   setPreviewMediaType("image")
+                  setPreviewMedia("/api/read?path=" + file)
+                  return
+                }  
+                else if (type == "video") {
+                  setPreviewMediaType("video")
                   setPreviewMedia("/api/read?path=" + file)
                   return
                 }
@@ -319,7 +339,7 @@ export default function FileExplorer() {
               if (!newName) return
               const from = e.state.selectedFilesForAction[0].fullPath
               const to = from.substring(0, from.length - fileName.length) + newName
-           
+
               await axios.post("/api/move", {
                 from, to
               });
@@ -366,6 +386,8 @@ export default function FileExplorer() {
           <UrlForm path={path} onChange={() => { setUrl(false); getDirectory() }} />
         </Box>
       </Modal>
+      
+     
       <PreviewModal open={previewText ? true : false} text={previewText} onClose={() => setPreviewText(null)} />
       <MediaModal open={previewMedia ? true : false}
         mediaPath={previewMedia}
@@ -408,4 +430,3 @@ export default function FileExplorer() {
     </>
   );
 }
- 

@@ -14,8 +14,7 @@ module.exports = async function list(inDirectory) {
     const [files] = await bucket.getFiles(options)
 
     let filesOut = []
-    let foldersOut = []
-
+    let foldersOut = [] 
     for (let file of files) {
 
         let fileName = file.name.substring(pathPrefix().length)
@@ -34,10 +33,13 @@ module.exports = async function list(inDirectory) {
                 fullName: fileName
             })
         } else {
-            name = name.substring(name.lastIndexOf("/")).replace("/","")
+            name = name.substring(name.lastIndexOf("/")).replace("/","") 
             filesOut.push({
                 name: name,
-                fullName: fileName
+                fullName: fileName,
+                contentType: file.metadata.contentType,
+                size:  file.metadata.size,
+                modified:  file.metadata.updated
             })
         }
 

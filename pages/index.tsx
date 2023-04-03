@@ -3,6 +3,7 @@ import React from 'react';
 import { NextPageContext } from 'next';
 import LoginForm from '../components/LoginForm';
 import Desktop from '../components/Desktop';
+import FileExplorer from '../components/FileExplorer';
   
 interface Props {
 
@@ -20,7 +21,8 @@ export default function Home({ auth }: Props) {
       <Head>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
-      <Desktop />
+      {/* <Desktop /> */}
+      <FileExplorer />
     </>
   )
 
