@@ -2,30 +2,38 @@ import { Button, TextField, Typography } from "@mui/material";
 import axios from "axios";
 import { useState } from "react";
 
-interface Props { 
-    path: string
+interface Props {
+    paths: string[]
     onNo: () => void
     onChange: () => void
 }
 
-export default function DeleteForm({ path, onNo, onChange }: Props) {
- 
+export default function DeleteForm({ paths, onNo, onChange }: Props) {
+
 
     async function onSubmit() {
         // if (folderName.trim() == "") return
         // let name = folderName.replace("/", "") + "/"
-
-        await axios.post("/api/delete", {
-            path
-        })
+        let promises = []
+        for (let path of paths) {
+            promises.push(
+                axios.post("/api/delete", {
+                    path
+                })
+            )
+        }
+        await Promise.all(promises)
         onChange()
     }
 
     return (
         <>
             <Typography variant="h6">
-                Delete {path}?
+                Delete:
             </Typography>
+            <div style={{ maxHeight: "250px", overflowY: "scroll" }}>
+                {paths.map(p => <div key={p}>{p}</div>)}
+            </div>
             <div style={{
                 display: "flex",
                 gap: "10px",

@@ -319,7 +319,7 @@ export default function FileExplorer() {
             } else if (e.id as string == "new_folder") {
               setNewFolder(true)
             } else if (e.id as string == "delete") {
-              setMDelete(e.state.selectedFilesForAction[0].fullPath)
+              setMDelete(e.state.selectedFilesForAction.map(f=> f.fullPath))
             } else if (e.id as string == "upload") {
               setUpload(true)
             } else if (e.id as string == "new_url") {
@@ -367,7 +367,7 @@ export default function FileExplorer() {
         onClose={() => setMDelete(false)}
       >
         <Box sx={modalStyle}>
-          <DeleteForm path={mDelete} onNo={() => setMDelete(false)} onChange={() => { setMDelete(false); getDirectory() }} />
+          <DeleteForm paths={mDelete} onNo={() => setMDelete(false)} onChange={() => { setMDelete(false); getDirectory() }} />
         </Box>
       </Modal>
       <Modal

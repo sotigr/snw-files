@@ -25,7 +25,7 @@ export default function UploadForm({ path, onChange }: Props) {
         }
     }
     // useEffect(() => {
- 
+
     //     document.onpaste = function (event) {
     //         const file = getFileFromPasteEvent(event);
     //         if (!file) { return; }
@@ -37,14 +37,14 @@ export default function UploadForm({ path, onChange }: Props) {
     //         document.onpaste = () => { }
     //     }
     // }, [])
-    function onClipboard (event) {
+    function onClipboard(event) {
         const file = getFileFromPasteEvent(event);
         if (!file) { return; }
 
         setFiles([file])
         setFileName(file.name)
     }
- 
+
     useEffect(() => {
         let name = fileName.replace("/", "")
         setFinalName((path == "/" ? "" : path) + name)
@@ -64,7 +64,13 @@ export default function UploadForm({ path, onChange }: Props) {
 
             const onUploadProgress = (event) => {
                 const percentage = Math.round((100 * event.loaded) / event.total);
-                setStatus(<div><span> Uploading: {name} {cn}/{len}</span> <LinearProgress variant="determinate" value={percentage} /> </div>)
+                setStatus(
+                    <div>
+                        <div> Uploading: {name} </div>
+                        <LinearProgress variant="determinate" value={percentage} />
+                        <div>{percentage}% | {cn}/{len}</div>
+                    </div>
+                )
             };
 
             await axios.postForm("/api/upload", data, {
@@ -85,7 +91,7 @@ export default function UploadForm({ path, onChange }: Props) {
             setFiles(files)
             setFileName(files[0].name)
         } else {
-            uploadFiles(files)
+            await uploadFiles(files)
             onChange()
         }
 
@@ -100,7 +106,12 @@ export default function UploadForm({ path, onChange }: Props) {
         const onUploadProgress = (event) => {
             const percentage = Math.round((100 * event.loaded) / event.total);
 
-            setStatus(<div> <LinearProgress variant="determinate" value={percentage} /> </div>)
+            setStatus(
+                <div>
+                    <LinearProgress variant="determinate" value={percentage} />
+                    <div>{percentage}%</div>
+                </div>
+            )
         };
 
         await axios.postForm("/api/upload", data, {
