@@ -1,8 +1,14 @@
-FROM node:lts-alpine3.17
+FROM --platform=$BUILDPLATFORM node:lts-alpine3.17
 
 WORKDIR /src
 
+RUN mkdir /creds
+
+COPY package.json package.json
+RUN npm i
+
 COPY . .
 
-RUN npm i
+RUN rm -rf key.json
+
 RUN npm run build

@@ -1,0 +1,17 @@
+version: '3.7'
+services:  
+  snw-files:
+    container_name: snw-files
+    restart: always
+    command: /bin/sh -c "npm run start"
+    ports:
+      - '5050:80'  
+    image: sotig/snw-files:v11
+    volumes:
+      - ./creds:/creds
+    environment: 
+      - KEY_PATH=/creds/key.json
+      - BUCKET=snw-storage
+      - PROD=true
+      - PORT=80
+      - PATH_PREFIX=root/

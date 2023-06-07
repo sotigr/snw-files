@@ -7,10 +7,24 @@ const handle = app.getRequestHandler()
 const bodyParser = require('body-parser');
 const read = require('./storage/read');
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000
+const schedule = require('node-schedule');
+const fs = require("fs")
 
+const fileDir = "/tmp/files"
+const thumbDir = "/tmp/thumbs"
 async function main() {
 
   let password = JSON.parse(await read("auth.json")).password
+
+  schedule.scheduleJob('0 * * * *', function(){
+    fs.rmSync(fileDir, { recursive: true, force: true });
+    console.log('Clearing temp files');
+  });
+
+  schedule.scheduleJob('0 */3 * * *', function(){
+    fs.rmSync(thumbDir, { recursive: true, force: true });
+    console.log('Clearing thumbnails');
+  });
 
   app.prepare()
     .then(async () => {

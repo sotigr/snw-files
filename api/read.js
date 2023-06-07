@@ -2,8 +2,7 @@ const read = require("../storage/read")
 
 const mime = require("mime")
 
-const { Readable } = require('stream');
-
+// const { Readable } = require('stream'); 
 
 const pathPrefix = require("./helpers/path-prefix");
 
@@ -12,14 +11,24 @@ const readToFile = require("../storage/read-to-file")
 const fs = require("fs")
 const md5 = require("md5")
 
+const fileDir = "/tmp/files"
+const thumbDir = "/tmp/thumbs"
+
 module.exports = async function (req, res) {
 
     const pathName = pathPrefix() + req.query.path
     const thumb = req.query.thumb == "true"
 
     const download = req.query.download
-    const tempPath = `/tmp/tmp-` + md5(pathName)
-    const tempPathThumb = "/tmp/tmp-thumb_" + md5(pathName)
+    const tempPath = `${fileDir}/tmp-` + md5(pathName)
+    const tempPathThumb = `${thumbDir}/tmp-thumb_` + md5(pathName)
+    if (!fs.existsSync(fileDir)){
+        fs.mkdirSync(fileDir);
+    }
+    if (!fs.existsSync(thumbDir)){
+        fs.mkdirSync(thumbDir);
+    }
+
 
     const tempExists = fs.existsSync(thumb ? tempPathThumb : tempPath)
 
