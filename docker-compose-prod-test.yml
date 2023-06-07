@@ -6,7 +6,9 @@ services:
     command: /bin/sh -c "npm run start"
     ports:
       - '5050:80'  
-    image: sotig/snw-files:v11
+    build: 
+      context: ./
+      dockerfile: ./Dockerfile.prod 
     volumes:
       - ./creds:/creds
     environment: 
